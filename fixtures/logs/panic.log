@@ -1,0 +1,37 @@
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0x8 (SPI_FAST_FLASH_BOOT)
+entry 0x403c8928
+I (27) boot: ESP-IDF v6.0.1 2nd stage bootloader
+I (188) cpu_start: Pro cpu start user code
+I (202) app_init: ELF file SHA256:  b1d44e02c93a76e8...
+I (246) main_task: Calling app_main()
+I (246) testsubject: build: BUG_FLAGS=BUG_BUF_OVF  elf_sha256=b1d44e02c93a76e8
+I (252) testsubject: i2c: probing BME280 at 0x76... chip_id=0x60 OK
+I (258) testsubject: tasks: sensor_task(prio 5) logger_task(prio 3) heartbeat_task(prio 1)
+I (1266) testsubject: heartbeat #1 uptime=1.0s free_heap=340196
+I (1516) testsubject: sensor: T=23.41C P=1002.11hPa H=41.2%
+I (2266) testsubject: heartbeat #2 uptime=2.0s free_heap=340196
+Guru Meditation Error: Core  0 panic'ed (LoadProhibited). Exception was unhandled.
+
+Core  0 register dump:
+PC      : 0x42008f66  PS      : 0x00060c30  A0      : 0x82008ff8  A1      : 0x3fc9b230
+A2      : 0x00000000  A3      : 0x3fc9b2a4  A4      : 0x00000021  A5      : 0x00000001
+A6      : 0x00000000  A7      : 0x3fc93d1c  A8      : 0x00000020  A9      : 0x3fc9b210
+A10     : 0x00000000  A11     : 0x3fc9b2c4  A12     : 0x00000020  A13     : 0x00000000
+A14     : 0x3fc94e00  A15     : 0x00000000  SAR     : 0x00000004  EXCCAUSE: 0x0000001c
+EXCVADDR: 0x00000020  LBEG    : 0x40056f5c  LEND    : 0x40056f72  LCOUNT  : 0x00000000
+
+Backtrace: 0x42008f66:0x3fc9b230 0x42008ff5:0x3fc9b260 0x4200912a:0x3fc9b290 0x4037f8b1:0x3fc9b2c0
+
+ELF file SHA256: b1d44e02c93a76e8
+
+Rebooting...
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0xc (SW_CPU_RESET),boot:0x8 (SPI_FAST_FLASH_BOOT)
+Saved PC:0x40375d0e
+entry 0x403c8928
+I (246) main_task: Calling app_main()
+I (246) testsubject: build: BUG_FLAGS=BUG_BUF_OVF  elf_sha256=b1d44e02c93a76e8
+I (1266) testsubject: heartbeat #1 uptime=1.0s free_heap=340196

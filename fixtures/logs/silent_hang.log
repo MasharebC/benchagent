@@ -1,0 +1,9 @@
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0x8 (SPI_FAST_FLASH_BOOT)
+entry 0x403c8928
+I (27) boot: ESP-IDF v6.0.1 2nd stage bootloader
+I (246) main_task: Calling app_main()
+I (246) testsubject: build: BUG_FLAGS=BUG_DEADLOCK  elf_sha256=77aa0e91cc24bd05
+I (258) testsubject: tasks: sensor_task(prio 5) logger_task(prio 3) heartbeat_task(prio 1)
+I (1266) testsubject: heartbeat #1 uptime=1.0s free_heap=340150

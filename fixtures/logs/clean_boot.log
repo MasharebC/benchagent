@@ -1,0 +1,60 @@
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0x8 (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce2810,len:0x178c
+load:0x403c8700,len:0x4
+load:0x403c8704,len:0xcb8
+load:0x403cb700,len:0x2db0
+entry 0x403c8928
+I (27) boot: ESP-IDF v6.0.1 2nd stage bootloader
+I (27) boot: compile time Aug  7 2026 19:02:11
+I (27) boot: Multicore bootloader
+I (30) boot: chip revision: v0.2
+I (34) boot.esp32s3: Boot SPI Speed : 80MHz
+I (38) boot.esp32s3: SPI Mode       : DIO
+I (43) boot.esp32s3: SPI Flash Size : 8MB
+I (47) boot: Enabling RNG early entropy source...
+I (58) boot: Partition Table:
+I (61) boot: ## Label            Usage          Type ST Offset   Length
+I (68) boot:  0 nvs              WiFi data        01 02 00009000 00006000
+I (75) boot:  1 phy_init         RF data          01 01 0000f000 00001000
+I (83) boot:  2 factory          factory app      00 00 00010000 00100000
+I (90) boot: End of partition table
+I (94) esp_image: segment 0: paddr=00010020 vaddr=3c020020 size=0a3a4h ( 41892) map
+I (109) esp_image: segment 1: paddr=0001a3cc vaddr=3fc92c00 size=02b04h ( 11012) load
+I (118) esp_image: segment 2: paddr=0001ced8 vaddr=40374000 size=03140h ( 12608) load
+I (126) esp_image: segment 3: paddr=00020020 vaddr=42000020 size=1c9a8h (117160) map
+I (152) esp_image: segment 4: paddr=0003c9d0 vaddr=40377140 size=0b3f8h ( 46072) load
+I (168) boot: Loaded app from partition at offset 0x10000
+I (168) boot: Disabling RNG early entropy source...
+I (179) cpu_start: Multicore app
+I (188) cpu_start: Pro cpu start user code
+I (188) cpu_start: cpu freq: 240000000 Hz
+I (189) app_init: Application information:
+I (189) app_init: Project name:     testsubject
+I (193) app_init: App version:      0.1.0
+I (197) app_init: Compile time:     Aug  7 2026 19:02:03
+I (202) app_init: ELF file SHA256:  9f3a1c22e5b8d4a1...
+I (207) app_init: ESP-IDF:          v6.0.1
+I (211) heap_init: Initializing. RAM available for dynamic allocation:
+I (218) heap_init: At 3FC96A28 len 00052CE8 (331 KiB): RAM
+I (223) heap_init: At 3FCE9710 len 00005724 (21 KiB): RAM
+I (229) spi_flash: detected chip: gd
+I (232) spi_flash: flash io: dio
+I (236) main_task: Started on CPU0
+I (246) main_task: Calling app_main()
+I (246) testsubject: build: BUG_FLAGS=none  elf_sha256=9f3a1c22e5b8d4a1
+I (252) testsubject: i2c: probing BME280 at 0x76... chip_id=0x60 OK
+I (258) testsubject: tasks: sensor_task(prio 5) logger_task(prio 3) heartbeat_task(prio 1)
+I (1266) testsubject: heartbeat #1 uptime=1.0s free_heap=340212
+I (1516) testsubject: sensor: T=23.41C P=1002.11hPa H=41.2%
+I (2266) testsubject: heartbeat #2 uptime=2.0s free_heap=340212
+I (2516) testsubject: sensor: T=23.42C P=1002.09hPa H=41.2%
+I (3266) testsubject: heartbeat #3 uptime=3.0s free_heap=340212
+I (3516) testsubject: sensor: T=23.40C P=1002.10hPa H=41.3%
+I (4266) testsubject: heartbeat #4 uptime=4.0s free_heap=340212
+I (4516) testsubject: sensor: T=23.41C P=1002.12hPa H=41.2%
+I (5266) testsubject: heartbeat #5 uptime=5.0s free_heap=340212
+I (5516) testsubject: sensor: T=23.43C P=1002.08hPa H=41.2%

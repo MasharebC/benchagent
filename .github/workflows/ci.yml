@@ -1,0 +1,22 @@
+name: ci
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install pytest
+      - run: python -m pytest tests/ -q
+      - name: firmware static analysis (cppcheck)
+        run: |
+          sudo apt-get install -y cppcheck
+          cppcheck --enable=warning,style,performance --error-exitcode=1 \
+            --suppress=missingIncludeSystem -I firmware/testsubject/main \
+            -DBUG_FLAGS_STR='"none"' firmware/testsubject/main/
+      - name: mock-loop smoke test
+        run: |
+          ./benchagent run --mock fixtures/logs/bootloop.log --mock-llm | grep -q "Class:** boot-loop"
+          ./benchagent run --mock fixtures/logs/panic.log --mock-llm | grep -q "Class:** panic"
+          ./benchagent run --mock fixtures/logs/clean_boot.log --mock-llm | grep -q "PASS"

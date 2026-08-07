@@ -1,0 +1,74 @@
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0x8 (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+entry 0x403c8928
+I (27) boot: ESP-IDF v6.0.1 2nd stage bootloader
+I (168) boot: Loaded app from partition at offset 0x10000
+I (188) cpu_start: Pro cpu start user code
+I (197) app_init: Compile time:     Aug  7 2026 19:22:41
+I (202) app_init: ELF file SHA256:  4be09c77a2d113f0...
+I (246) main_task: Calling app_main()
+I (246) testsubject: build: BUG_FLAGS=BUG_WDT_STARVE  elf_sha256=4be09c77a2d113f0
+I (252) testsubject: i2c: probing BME280 at 0x76... chip_id=0x60 OK
+I (258) testsubject: tasks: sensor_task(prio 5) logger_task(prio 3) heartbeat_task(prio 1)
+I (1266) testsubject: heartbeat #1 uptime=1.0s free_heap=340180
+I (1516) testsubject: sensor: T=23.41C P=1002.11hPa H=41.2%
+I (2266) testsubject: heartbeat #2 uptime=2.0s free_heap=340180
+E (6266) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:
+E (6266) task_wdt:  - IDLE0 (CPU 0)
+E (6266) task_wdt: Tasks currently running:
+E (6266) task_wdt: CPU 0: sensor_task
+E (6266) task_wdt: CPU 1: IDLE1
+E (6266) task_wdt: Aborting.
+abort() was called at PC 0x40379d24 on core 0
+
+Backtrace: 0x40375c3a:0x3fc9b1a0 0x40379d2f:0x3fc9b1c0 0x4037f8b1:0x3fc9b1e0 0x40379d24:0x3fc9b250 0x42008a4e:0x3fc9b270 0x42008b12:0x3fc9b290
+
+ELF file SHA256: 4be09c77a2d113f0
+
+Rebooting...
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0xc (SW_CPU_RESET),boot:0x8 (SPI_FAST_FLASH_BOOT)
+Saved PC:0x40375d0e
+entry 0x403c8928
+I (27) boot: ESP-IDF v6.0.1 2nd stage bootloader
+I (246) main_task: Calling app_main()
+I (246) testsubject: build: BUG_FLAGS=BUG_WDT_STARVE  elf_sha256=4be09c77a2d113f0
+I (252) testsubject: i2c: probing BME280 at 0x76... chip_id=0x60 OK
+I (1266) testsubject: heartbeat #1 uptime=1.0s free_heap=340180
+E (5266) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:
+E (5266) task_wdt:  - IDLE0 (CPU 0)
+E (5266) task_wdt: Tasks currently running:
+E (5266) task_wdt: CPU 0: sensor_task
+E (5266) task_wdt: CPU 1: IDLE1
+E (5266) task_wdt: Aborting.
+abort() was called at PC 0x40379d24 on core 0
+
+Backtrace: 0x40375c3a:0x3fc9b1a0 0x40379d2f:0x3fc9b1c0 0x4037f8b1:0x3fc9b1e0 0x40379d24:0x3fc9b250 0x42008a4e:0x3fc9b270 0x42008b12:0x3fc9b290
+
+Rebooting...
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0xc (SW_CPU_RESET),boot:0x8 (SPI_FAST_FLASH_BOOT)
+Saved PC:0x40375d0e
+entry 0x403c8928
+I (246) main_task: Calling app_main()
+I (246) testsubject: build: BUG_FLAGS=BUG_WDT_STARVE  elf_sha256=4be09c77a2d113f0
+I (1266) testsubject: heartbeat #1 uptime=1.0s free_heap=340180
+E (5266) task_wdt: Task watchdog got triggered. The following tasks/users did not reset the watchdog in time:
+E (5266) task_wdt:  - IDLE0 (CPU 0)
+E (5266) task_wdt: Tasks currently running:
+E (5266) task_wdt: CPU 0: sensor_task
+E (5266) task_wdt: Aborting.
+abort() was called at PC 0x40379d24 on core 0
+
+Rebooting...
+ESP-ROM:esp32s3-20210327
+rst:0xc (SW_CPU_RESET),boot:0x8 (SPI_FAST_FLASH_BOOT)
+Saved PC:0x40375d0e
+entry 0x403c8928
+I (246) main_task: Calling app_main()
+I (246) testsubject: build: BUG_FLAGS=BUG_WDT_STARVE  elf_sha256=4be09c77a2d113f0

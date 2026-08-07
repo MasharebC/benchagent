@@ -1,0 +1,27 @@
+# FaultBench bug registry — ground truth for every planted bug.
+# Each entry names the chip-accurate signature; the eval rubric scores the
+# agent against these fields. Corpus grows 3 → 8-10 in Stage 2.
+bugs:
+  - id: BUG_WDT_STARVE
+    stage: 0
+    status: implemented
+    interview_topic: FreeRTOS scheduling, watchdogs
+    mechanism: busy-loop in sensor_task never yields; IDLE0 cannot feed the task WDT
+    signature:
+      watchdog: task WDT (TG0 escalation)
+      reset_reason: SW_CPU_RESET (abort in WDT handler), repeating -> boot loop
+      serial: "task_wdt: IDLE0 starved; sensor_task running on CPU0"
+    ground_truth_location: main/main.c sensor_task BUG_WDT_STARVE block
+  - id: BUG_HEAP_LEAK
+    stage: 1
+    status: planned
+    interview_topic: heap management, fragmentation
+    signature:
+      serial: free_heap telemetry trending down; eventual malloc fail or reset
+  - id: BUG_BUF_OVF
+    stage: 1
+    status: planned
+    interview_topic: bounds, panic decoding
+    signature:
+      panic: LoadProhibited, EXCCAUSE 0x1c, near-NULL EXCVADDR
+      reset_reason: SW_CPU_RESET after Guru Meditation

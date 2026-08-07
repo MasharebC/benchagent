@@ -1,0 +1,40 @@
+#!/usr/bin/env python3
+"""BenchAgent CLI.
+
+Usage:
+  ./benchagent run --mock fixtures/logs/bootloop.log
+  ./benchagent run --mock fixtures/logs/panic.log --allow-break-glass
+"""
+import argparse, sys, pathlib
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+
+from agent.config import RunConfig
+from agent.run import run_mock
+
+
+def main():
+    p = argparse.ArgumentParser(prog="benchagent")
+    sub = p.add_subparsers(dest="cmd", required=True)
+    r = sub.add_parser("run", help="run the flash→observe→diagnose loop")
+    r.add_argument("--mock", metavar="LOGFILE",
+                   help="replay a canned serial log instead of real hardware")
+    r.add_argument("--allow-break-glass", action="store_true",
+                   help="permit tier-3 (Fable) escalation")
+    r.add_argument("--mock-llm", action="store_true",
+                   help="force the canned LLM even if ANTHROPIC_API_KEY is set")
+    args = p.parse_args()
+
+    if args.cmd == "run":
+        if not args.mock:
+            print("Real-hardware mode lands in Stage 1. Use --mock <logfile>.")
+            sys.exit(2)
+        cfg = RunConfig(mock=True,
+                        allow_break_glass=args.allow_break_glass,
+                        force_mock_llm=args.mock_llm)
+        run_dir = run_mock(args.mock, cfg)
+        print(f"run archived: {run_dir}")
+        print((run_dir / "report.md").read_text())
+
+
+if __name__ == "__main__":
+    main()
