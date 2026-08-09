@@ -16,8 +16,8 @@ from dataclasses import dataclass
 
 MODEL_TIERS = [
     {"tier": 1, "name": "sonnet", "model_id": "claude-sonnet-4-6"},
-    {"tier": 2, "name": "opus", "model_id": "claude-opus-4-8"},
-    {"tier": 3, "name": "fable", "model_id": "claude-fable-5", "break_glass": True},
+    {"tier": 2, "name": "opus", "model_id": "claude-opus-4-6"},
+    {"tier": 3, "name": "opus-break-glass", "model_id": "claude-opus-4-6", "break_glass": True},
 ]
 
 CONFIDENCE_ESCALATE = 0.7   # below this, go up one tier
