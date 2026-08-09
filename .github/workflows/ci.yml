@@ -17,6 +17,6 @@ jobs:
             -DBUG_FLAGS_STR='"none"' firmware/testsubject/main/
       - name: mock-loop smoke test
         run: |
-          ./benchagent run --mock fixtures/logs/bootloop.log --mock-llm | grep -q "Class:** boot-loop"
-          ./benchagent run --mock fixtures/logs/panic.log --mock-llm | grep -q "Class:** panic"
-          ./benchagent run --mock fixtures/logs/clean_boot.log --mock-llm | grep -q "PASS"
+          ./benchagent run --mock fixtures/logs/bootloop.log --mock-llm | grep -qF "Class:** boot-loop"
+          ./benchagent run --mock fixtures/logs/panic.log --mock-llm | grep -qF "Class:** panic"
+          ./benchagent run --mock fixtures/logs/clean_boot.log --mock-llm | grep -qF "PASS"
