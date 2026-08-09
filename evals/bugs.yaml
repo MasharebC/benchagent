@@ -1,6 +1,6 @@
 # FaultBench bug registry — ground truth for every planted bug.
 # Each entry names the chip-accurate signature; the eval rubric scores the
-# agent against these fields. Corpus grows 3 → 8-10 in Stage 2.
+# agent against these fields. Corpus grows to 8-10 bugs across Stage 1-2.
 bugs:
   - id: BUG_WDT_STARVE
     stage: 0
@@ -12,16 +12,65 @@ bugs:
       reset_reason: SW_CPU_RESET (abort in WDT handler), repeating -> boot loop
       serial: "task_wdt: IDLE0 starved; sensor_task running on CPU0"
     ground_truth_location: main/main.c sensor_task BUG_WDT_STARVE block
+
   - id: BUG_HEAP_LEAK
     stage: 1
-    status: planned
+    status: implemented
     interview_topic: heap management, fragmentation
+    mechanism: >
+      logger_task mallocs 128 bytes per sample (1/sec) without freeing.
+      Heap drains monotonically; eventually pvPortMalloc returns NULL and
+      a subsequent configASSERT or allocation in another task triggers reset.
     signature:
-      serial: free_heap telemetry trending down; eventual malloc fail or reset
+      serial: "free_heap telemetry in heartbeat trending down >100 bytes/s"
+      reset_reason: SW_CPU_RESET or brownout after heap exhaustion
+      watchdog: none (heap exhaustion, not WDT)
+    ground_truth_location: main/main.c logger_task BUG_HEAP_LEAK block
+    detection_hint: >
+      free_heap slope < -100 bytes/s sustained over 10 s window is
+      the classifier trigger; agent should cite the missing free().
+
   - id: BUG_BUF_OVF
     stage: 1
-    status: planned
-    interview_topic: bounds, panic decoding
+    status: implemented
+    interview_topic: bounds checking, panic decoding, EXCCAUSE table
+    mechanism: >
+      logger_task copies 17 bytes into a 16-byte stack buffer (pkt.buf),
+      overwriting the LSB of the adjacent pointer pkt.ptr. The corrupted
+      pointer is then passed to ESP_LOGI, which dereferences it causing
+      Guru Meditation LoadProhibited.
     signature:
-      panic: LoadProhibited, EXCCAUSE 0x1c, near-NULL EXCVADDR
+      panic: LoadProhibited, EXCCAUSE 0x1c
       reset_reason: SW_CPU_RESET after Guru Meditation
+      excvaddr: low or mid-range address (corrupted pointer value)
+    ground_truth_location: main/main.c logger_task BUG_BUF_OVF block
+    detection_hint: >
+      The off-by-one is in the memcpy length (17 vs sizeof(pkt.buf)=16).
+      Agent should name the struct layout and the pointer corruption path.
+
+  - id: BUG_DEADLOCK
+    stage: 2
+    status: planned
+    interview_topic: FreeRTOS mutexes, priority inversion
+    mechanism: >
+      Two tasks acquire two mutexes in opposite order. Under load, task A
+      holds mutex_1 and waits for mutex_2 while task B holds mutex_2 and
+      waits for mutex_1. Both block forever; the task WDT fires on the
+      starved IDLE task if subscribed, or the system silently hangs.
+    signature:
+      watchdog: task WDT (if subscribed) or silent hang
+      reset_reason: SW_CPU_RESET or none (wedged)
+      serial: output stops after both tasks block; no panic frame
+
+  - id: BUG_STACK_OVF
+    stage: 2
+    status: planned
+    interview_topic: stack sizing, FreeRTOS stack canaries
+    mechanism: >
+      A recursive call in sensor processing with no depth limit overflows
+      the sensor_task stack (3072 bytes). FreeRTOS detects the canary
+      corruption and calls vApplicationStackOverflowHook, which aborts.
+    signature:
+      panic: Guru Meditation or stack overflow assertion
+      reset_reason: SW_CPU_RESET
+      serial: "***ERROR*** A stack overflow in task sensor_task"

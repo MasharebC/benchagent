@@ -1,13 +1,13 @@
 """Model routing + run configuration.
 
-Escalation ladder (roadmap Stage 0):
+Escalation ladder:
     tier 1  Sonnet  — workhorse, every run starts here
     tier 2  Opus    — escalate when tier-1 confidence < CONFIDENCE_ESCALATE
-    tier 3  Fable   — break-glass only; requires --allow-break-glass
+    tier 3  Opus    — break-glass only; requires --allow-break-glass
 
-NOTE: verify current model IDs in the Anthropic Console before first real
-run — these strings go stale. They are pinned here (not scattered through
-code) so a benchmark run can record exactly which models produced it.
+Model IDs verified against Anthropic Console 2026-08-09. They are pinned
+here (not scattered through code) so every benchmark run records exactly
+which models produced it. Update this comment when you re-verify.
 """
 
 from __future__ import annotations

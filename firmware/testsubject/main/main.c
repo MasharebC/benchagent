@@ -14,11 +14,12 @@
  *
  * Planted bugs are compile-flag gated so ground truth is falsifiable:
  *   -DBUG_WDT_STARVE   busy-loop in sensor_task starves IDLE0's WDT feed
- *   -DBUG_HEAP_LEAK    (Stage 1) slow leak in logger path
- *   -DBUG_BUF_OVF      (Stage 1) off-by-one memcpy → LoadProhibited
+ *   -DBUG_HEAP_LEAK    slow malloc without free in logger path; heap drains 1/sec
+ *   -DBUG_BUF_OVF      off-by-one memcpy corrupts adjacent pointer → LoadProhibited
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -79,8 +80,34 @@ static void logger_task(void *arg)
     sample_t s;
     for (;;) {
         if (xQueueReceive(s_sample_q, &s, portMAX_DELAY) == pdTRUE) {
+#ifdef BUG_HEAP_LEAK
+            /* BUG: allocate a log buffer every sample but never free it.
+             * Heap drains ~128 bytes/sec. Signature: free_heap telemetry in
+             * heartbeat_task trends monotonically down; eventually pvPortMalloc
+             * returns NULL (logged), then a configASSERT or reset follows.
+             * Detection: free_heap slope < -100 bytes/s over a 10 s window. */
+            char *buf = malloc(128);
+            if (buf != NULL) {
+                snprintf(buf, 128, "sensor: T=%.2fC P=%.2fhPa H=%.1f%%",
+                         s.temp_c, s.press_hpa, s.hum_pct);
+                ESP_LOGI(TAG, "%s", buf);
+                /* deliberate: free(buf) omitted */
+            } else {
+                ESP_LOGE(TAG, "malloc failed — heap exhausted");
+            }
+#elif defined(BUG_BUF_OVF)
+            /* BUG: struct lays buf[16] immediately before ptr. memcpy copies
+             * 17 bytes — one past buf — corrupting ptr's LSB. The subsequent
+             * ESP_LOGI dereferences the corrupted pointer. Signature: Guru
+             * Meditation LoadProhibited, EXCCAUSE 0x1c, EXCVADDR in low range. */
+            struct { char buf[16]; const char *ptr; } pkt;
+            pkt.ptr = "sensor: T=%.2fC P=%.2fhPa H=%.1f%%";
+            memcpy(pkt.buf, "sensor_data_ovfl!", 17);  /* 17 bytes: buf[16]+ptr[0] */
+            ESP_LOGI(TAG, pkt.ptr, s.temp_c, s.press_hpa, s.hum_pct);
+#else
             ESP_LOGI(TAG, "sensor: T=%.2fC P=%.2fhPa H=%.1f%%",
                      s.temp_c, s.press_hpa, s.hum_pct);
+#endif
         }
     }
 }

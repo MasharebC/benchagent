@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python:*)",
+      "Bash(./benchagent run:*)",
+      "Bash(gh repo:*)",
+      "Bash(gh run:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m 'fix: use -F \\(fixed-string\\) in CI smoke test grep patterns:*)",
+      "Bash(git push:*)",
+      "Bash(git commit -m 'fix: correct stale model IDs in MODEL_TIERS:*)",
+      "Bash(git commit:*)"
+    ]
+  }
+}
