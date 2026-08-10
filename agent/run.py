@@ -161,6 +161,17 @@ class MockLLM:
             "code_location": "n/a",
             "suggested_fix": "n/a",
         },
+        "heap-leak": {
+            "verdict": "FAIL",
+            "failure_class": "heap-leak",
+            "mechanism": ("free_heap telemetry in heartbeat_task trends monotonically "
+                          "down at a sustained rate — device still alive, no panic or "
+                          "reset yet. Consistent with a malloc without a matching free() "
+                          "on a hot path; left alone, pvPortMalloc will eventually "
+                          "return NULL and the next allocation or configASSERT aborts."),
+            "code_location": "main/main.c: logger_task BUG_HEAP_LEAK block",
+            "suggested_fix": "Add the missing free() for the per-sample allocation in logger_task.",
+        },
     }
     # Per-tier confidence: tier 1 is unsure about the boot loop → escalation.
     CONFIDENCE = {
@@ -168,6 +179,7 @@ class MockLLM:
         ("panic", 1): 0.85,
         ("silent-hang", 1): 0.45, ("silent-hang", 2): 0.5, ("silent-hang", 3): 0.5,
         ("clean-boot", 1): 0.97,
+        ("heap-leak", 1): 0.9,
     }
 
     def diagnose(self, model_id: str, bundle, executor, tier: int = 1):

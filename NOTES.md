@@ -1,5 +1,29 @@
 # NOTES — did / broken / exact next step (never stop at a clean boundary)
 
+## 2026-08-10 (session 3 — BUG_HEAP_LEAK classifier support, hardware-independent)
+**did:** added free_heap trend detection to bench/classify.py —
+`parse_heartbeats`/`detect_heap_leak` decode the heartbeat_task telemetry
+line and flag a new `heap-leak` failure class when free_heap declines
+monotonically by >100 bytes/s over a >=10s window (matches the detection
+hint in evals/bugs.yaml for BUG_HEAP_LEAK). Added `heap_trend` field to
+EvidenceBundle. New fixture fixtures/logs/heap_leak.log (~128 bytes/s
+decline, matches the firmware comment). 3 new unit tests (5/5 fixtures now
+covered: clean-boot, boot-loop, panic, silent-hang, heap-leak). Also fixed
+MockLLM.CANNED, which had no entry for "heap-leak" and was silently
+falling back to the silent-hang canned diagnosis — added a proper canned
+mechanism/fix and confidence entry. Verified end-to-end with
+`./benchagent run --mock fixtures/logs/heap_leak.log --mock-llm`.
+**broken:** nothing new. Bench classes and bme280.c still unvalidated
+against real hardware, blocked on the sensor (arrives 2026-08-11) and
+MEGA4 (arrives 2026-08-13).
+**exact next step:** more hardware-independent work while waiting:
+implement the two remaining "planned" bugs (BUG_DEADLOCK, BUG_STACK_OVF)
+in firmware behind compile flags; write unit tests for the real bench
+classes (flash.py/power.py/serial_monitor.py) with mocked
+serial/subprocess calls. Once hardware arrives: validate
+RealSerial/EsptoolFlasher/UhubctlPower end-to-end, then run the M1
+acceptance test.
+
 ## 2026-08-10 (hardware status check)
 **did:** confirmed arrival status of the hardware order. Rest of the Amazon
 BOM has arrived. Two items still in transit: the sensor (arriving

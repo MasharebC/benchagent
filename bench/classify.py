@@ -44,6 +44,14 @@ ABORT_RE = re.compile(r"abort\(\) was called at PC (0x[0-9a-fA-F]+) on core (\d)
 ELF_SHA_RE = re.compile(r"ELF file SHA256:\s*([0-9a-fA-F]+)")
 BUG_FLAGS_RE = re.compile(r"BUG_FLAGS=(\S+)")
 HEARTBEAT_RE = re.compile(r"heartbeat #(\d+)")
+HEARTBEAT_HEAP_RE = re.compile(
+    r"heartbeat #(\d+) uptime=([\d.]+)s free_heap=(\d+)"
+)
+
+# BUG_HEAP_LEAK detection hint (evals/bugs.yaml): free_heap slope < -100
+# bytes/s sustained over a 10s window.
+HEAP_LEAK_SLOPE_THRESHOLD = -100.0
+HEAP_LEAK_MIN_WINDOW_S = 10.0
 
 # EXCCAUSE decode (Xtensa LX7) — the subset that matters for the bug corpus.
 EXCCAUSE = {
@@ -81,6 +89,7 @@ class EvidenceBundle:
     elf_sha256: str | None
     bug_flags_reported: str | None     # what the firmware *claims* was compiled in
     last_heartbeat: int | None
+    heap_trend: dict | None            # set when a sustained free_heap decline is seen
     serial_tail: list[str]             # last N lines, monotonic order
     notes: list[str] = field(default_factory=list)
 
@@ -134,6 +143,46 @@ def parse_task_wdt(text: str) -> dict | None:
     }
 
 
+def parse_heartbeats(text: str) -> list[dict]:
+    return [
+        {"n": int(n), "uptime_s": float(t), "free_heap": int(h)}
+        for n, t, h in HEARTBEAT_HEAP_RE.findall(text)
+    ]
+
+
+def detect_heap_leak(
+    heartbeats: list[dict],
+    *,
+    slope_threshold: float = HEAP_LEAK_SLOPE_THRESHOLD,
+    min_window_s: float = HEAP_LEAK_MIN_WINDOW_S,
+) -> dict | None:
+    """BUG_HEAP_LEAK signature: free_heap trends monotonically down at a
+    sustained slope. A single dip or noisy jitter should not trigger this —
+    require the window to span at least `min_window_s` and every sample to
+    be non-increasing, matching the "sustained" language in the bug's
+    detection hint (evals/bugs.yaml)."""
+    if len(heartbeats) < 2:
+        return None
+    span = heartbeats[-1]["uptime_s"] - heartbeats[0]["uptime_s"]
+    if span < min_window_s:
+        return None
+    monotonic = all(
+        heartbeats[i]["free_heap"] >= heartbeats[i + 1]["free_heap"]
+        for i in range(len(heartbeats) - 1)
+    )
+    if not monotonic:
+        return None
+    slope = (heartbeats[-1]["free_heap"] - heartbeats[0]["free_heap"]) / span
+    if slope > slope_threshold:
+        return None
+    return {
+        "slope_bytes_per_s": round(slope, 1),
+        "window_s": round(span, 1),
+        "start_free_heap": heartbeats[0]["free_heap"],
+        "end_free_heap": heartbeats[-1]["free_heap"],
+    }
+
+
 def classify(
     text: str,
     *,
@@ -151,9 +200,10 @@ def classify(
     sha_m = ELF_SHA_RE.search(text)
     flags_m = BUG_FLAGS_RE.search(text)
     heartbeats = [int(n) for n in HEARTBEAT_RE.findall(text)]
+    heap_leak = detect_heap_leak(parse_heartbeats(text))
     notes: list[str] = []
 
-    # Precedence: brownout > boot-loop > panic > watchdog > silent-hang > clean
+    # Precedence: brownout > boot-loop > panic > watchdog > heap-leak > silent-hang > clean
     if BROWNOUT_RE.search(text):
         failure = "brownout"
     elif len(resets) >= bootloop_threshold:
@@ -170,6 +220,14 @@ def classify(
         failure = "panic"
     elif task_wdt or any(r["name"].startswith(("TG0WDT", "TG1WDT", "RTCWDT")) for r in resets[1:]):
         failure = "watchdog-reset"
+    elif heap_leak:
+        failure = "heap-leak"
+        notes.append(
+            f"free_heap fell {heap_leak['start_free_heap'] - heap_leak['end_free_heap']} "
+            f"bytes over {heap_leak['window_s']:.0f}s "
+            f"({heap_leak['slope_bytes_per_s']:.1f} bytes/s, monotonic decline) — "
+            f"device still alive, heading toward exhaustion. Missing free() likely."
+        )
     elif _looks_silent(lines):
         failure = "silent-hang"
         notes.append(
@@ -190,6 +248,7 @@ def classify(
         elf_sha256=sha_m.group(1) if sha_m else None,
         bug_flags_reported=flags_m.group(1) if flags_m else None,
         last_heartbeat=max(heartbeats) if heartbeats else None,
+        heap_trend=heap_leak,
         serial_tail=lines[-tail_lines:],
         notes=notes,
     )
