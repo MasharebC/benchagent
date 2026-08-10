@@ -1,5 +1,31 @@
 # NOTES — did / broken / exact next step (never stop at a clean boundary)
 
+## 2026-08-10 (session 4 — unit tests for real bench classes, hardware-independent)
+**did:** wrote tests/test_bench_classes.py — 16 new unit tests for
+EsptoolFlasher, UhubctlPower, MockFlasher/MockPower, MockSerial, and
+RealSerial, all with mocked subprocess/serial I/O (no pyserial installed,
+no device required). Covers: esptool retry-via-power-cycle path and
+2-attempt failure, exact uhubctl CLI args and off→on ordering, subprocess
+error propagation, MockSerial max_lines truncation, and RealSerial's three
+stop conditions (silence deadline, window timeout, max_lines) via a fake
+monotonic clock + scripted fake serial port injected through
+sys.modules["serial"]. All 25 tests pass (9 classifier + 16 new); no logic
+bugs found, but the coverage is now in place to catch retry/truncation/
+timing regressions before real hardware is on the bench.
+**broken:** nothing new. Bench classes still logically untested against an
+*actual* device — mocks characterize the intended behavior, not hardware
+reality (USB re-enumeration, real port timeouts, etc. per
+docs/failure-modes.md). Sensor arrives 2026-08-11, MEGA4 arrives
+2026-08-13.
+**exact next step:** BUG_DEADLOCK and BUG_STACK_OVF firmware
+implementation is next on the hardware-independent list, but blocked here
+— no ESP-IDF toolchain installed on this machine, so the C can't be
+verified to compile -Wall -Wextra -Werror clean. Either install ESP-IDF
+first, or hold that task until hardware arrives and it can be verified on
+the actual bring-up machine. Once hardware arrives (~8/13): validate
+RealSerial/EsptoolFlasher/UhubctlPower end-to-end against the real board,
+then run the M1 acceptance test.
+
 ## 2026-08-10 (session 3 — BUG_HEAP_LEAK classifier support, hardware-independent)
 **did:** added free_heap trend detection to bench/classify.py —
 `parse_heartbeats`/`detect_heap_leak` decode the heartbeat_task telemetry
