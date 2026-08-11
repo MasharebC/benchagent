@@ -20,3 +20,5 @@ jobs:
           ./benchagent run --mock fixtures/logs/bootloop.log --mock-llm | grep -qF "Class:** boot-loop"
           ./benchagent run --mock fixtures/logs/panic.log --mock-llm | grep -qF "Class:** panic"
           ./benchagent run --mock fixtures/logs/clean_boot.log --mock-llm | grep -qF "PASS"
+          ./benchagent run --mock fixtures/logs/silent_hang.log --mock-llm | grep -qF "Class:** silent-hang"
+          ./benchagent run --mock fixtures/logs/heap_leak.log --mock-llm | grep -qF "Class:** heap-leak"
