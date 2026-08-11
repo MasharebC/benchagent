@@ -1,19 +1,21 @@
 # NOTES — did / broken / exact next step (never stop at a clean boundary)
 
-## 2026-08-10 (wrong board received)
-**did:** discovered the ESP32-S3 devkit (Amazon B0FDG3WJDX, listed as
-official ESP32-S3-DevKitC-1-N32R16V) physically has two USB-A ports. The
-real Espressif reference design for this board has two USB-C ports (`USB`
-native/OTG + `UART` bridge). Confirmed by trying to plug in a USB-C
-cable — it does not physically fit. This is either a mislabeled listing or
-a substituted/counterfeit item, not a cable question.
-**broken:** cannot flash or serial-capture on real hardware at all right
-now — blocked on getting the correct board, not just a cable. This is on
-top of the sensor (8/11) and MEGA4 (8/13) already in transit.
-**exact next step:** contact the Amazon seller for a replacement/refund
-citing the port mismatch against the official spec; do not buy a
-workaround cable/adapter for this. Once a genuine board is in hand, the
-USB-C-to-USB-C cable question resolves itself.
+## 2026-08-10 (cable mix-up, resolved — board is fine)
+**did:** chased down a false alarm. Initially misidentified the ESP32-S3
+devkit's (Amazon B0FDG3WJDX, ESP32-S3-DevKitC-1-N32R16V) port as USB-A,
+which didn't match Espressif's official USB-C reference design and
+looked like a wrong/counterfeit board. Corrected: the port is actually
+Micro-USB, matching the listing's "USB Micro-B" spec field all along —
+no board mismatch, just a port misidentification. Amazon's "Memory
+Storage Capacity: 32 bytes" field is still a garbage/auto-generated
+listing artifact, unrelated to this.
+**broken:** still can't flash or serial-capture on real hardware — the
+actual blocker is simply not having a USB-A-to-Micro-USB cable on hand
+(a common, cheap cable). Sensor arrives 8/11, MEGA4 arrives 8/13.
+**exact next step:** get a USB-A-to-Micro-USB cable (no need to contact
+the seller — board is legitimate). Once cable + sensor + MEGA4 are all
+in hand, validate RealSerial/EsptoolFlasher/UhubctlPower end-to-end and
+run the M1 acceptance test.
 
 ## 2026-08-10 (session 4 — unit tests for real bench classes, hardware-independent)
 **did:** wrote tests/test_bench_classes.py — 16 new unit tests for
