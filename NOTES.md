@@ -11,7 +11,9 @@ stop conditions (silence deadline, window timeout, max_lines) via a fake
 monotonic clock + scripted fake serial port injected through
 sys.modules["serial"]. All 25 tests pass (9 classifier + 16 new); no logic
 bugs found, but the coverage is now in place to catch retry/truncation/
-timing regressions before real hardware is on the bench.
+timing regressions before real hardware is on the bench. Also closed a
+related gap: CI's mock-loop smoke test only checked 3 of 5 failure
+classes (missing silent-hang and the new heap-leak) — added both.
 **broken:** nothing new. Bench classes still logically untested against an
 *actual* device — mocks characterize the intended behavior, not hardware
 reality (USB re-enumeration, real port timeouts, etc. per
