@@ -1,5 +1,20 @@
 # NOTES — did / broken / exact next step (never stop at a clean boundary)
 
+## 2026-08-10 (wrong board received)
+**did:** discovered the ESP32-S3 devkit (Amazon B0FDG3WJDX, listed as
+official ESP32-S3-DevKitC-1-N32R16V) physically has two USB-A ports. The
+real Espressif reference design for this board has two USB-C ports (`USB`
+native/OTG + `UART` bridge). Confirmed by trying to plug in a USB-C
+cable — it does not physically fit. This is either a mislabeled listing or
+a substituted/counterfeit item, not a cable question.
+**broken:** cannot flash or serial-capture on real hardware at all right
+now — blocked on getting the correct board, not just a cable. This is on
+top of the sensor (8/11) and MEGA4 (8/13) already in transit.
+**exact next step:** contact the Amazon seller for a replacement/refund
+citing the port mismatch against the official spec; do not buy a
+workaround cable/adapter for this. Once a genuine board is in hand, the
+USB-C-to-USB-C cable question resolves itself.
+
 ## 2026-08-10 (session 4 — unit tests for real bench classes, hardware-independent)
 **did:** wrote tests/test_bench_classes.py — 16 new unit tests for
 EsptoolFlasher, UhubctlPower, MockFlasher/MockPower, MockSerial, and
