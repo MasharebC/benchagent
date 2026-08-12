@@ -1,5 +1,27 @@
 # NOTES — did / broken / exact next step (never stop at a clean boundary)
 
+## 2026-08-12 (hardware status: MEGA4 + cables in hand, sensor tomorrow)
+**did:** acquired two USB-A-to-Micro-USB cables (one short, one long).
+UUGear MEGA4 hub arrived. Arrival order flipped from the original
+estimate — MEGA4 landed before the sensor instead of after it; BME280
+sensor now expected 2026-08-13. So as of today: ESP32-S3 devkit + cables
++ MEGA4 are all physically in hand; only the sensor is still outstanding.
+Checked this machine (dev laptop) for the board/hub — nothing enumerated
+over USB yet, and no ESP-IDF/esptool/uhubctl installed here.
+**broken:** real-hardware validation still hasn't started. Not fully
+blocked on the sensor anymore, though — main.c handles a missing BME280
+gracefully (logs the probe failure, keeps running), so
+flash/serial-capture/power-cycle validation could start on the ESP32-S3 +
+MEGA4 alone without waiting on the sensor, once everything is physically
+wired up on the actual bring-up machine.
+**exact next step:** confirm which machine is the bring-up host, wire up
+the ESP32-S3 through the MEGA4 there, install esptool/uhubctl (+ ESP-IDF
+if flashing custom firmware), and validate RealSerial/EsptoolFlasher/
+UhubctlPower against real hardware — doesn't need to wait on the sensor.
+Once the sensor arrives (~8/13), fold it in and run the full M1
+acceptance test (flash → watch → power-cycle → verdict, 3 planted bugs
+diagnosed unassisted).
+
 ## 2026-08-10 (cable mix-up, resolved — board is fine)
 **did:** chased down a false alarm. Initially misidentified the ESP32-S3
 devkit's (Amazon B0FDG3WJDX, ESP32-S3-DevKitC-1-N32R16V) port as USB-A,
