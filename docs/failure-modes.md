@@ -36,6 +36,21 @@ embedded culture: this file only grows.
   entry claimed node stability was tied to RTS-resets vs VBUS-cycles —
   that was inferred from two data points and is wrong; the USB identity
   is the actual variable.)
+- **2026-08-13 (BME280 bring-up):** a browning-out I2C sensor reads as
+  *healthy steady-state telemetry*, not as a fault. The BME280 reset itself
+  ~1×/s, so its config registers reverted to 0x00 (sleep) and its data
+  registers to the power-on default 0x80000/0x8000. bme280_read() then
+  compensated those blank values into T=22.30C P=671.23hPa H=0.0% —
+  byte-identical every sample, and superficially plausible. bme280_init()
+  still returned 0, because chip-ID probe, calibration read and register
+  writes all individually succeeded; only *persistence* was broken.
+  Detection that works: write ctrl_meas, read it back after ≥1 s (decay to
+  0x00 ⇒ the part is resetting), and treat adc_T==0x80000 / adc_H==0x8000
+  as "no measurement" rather than valid input to compensation. Detection
+  that does NOT work: return codes, chip ID, calibration sanity, or the
+  serial log — every line looks like a clean run. Bench implication: a
+  frozen-but-plausible telemetry stream is its own failure class and is
+  invisible to the current classifier.
 - **2026-08-13 (bring-up):** manual BOOT+RESET download-mode entry LATCHES
   until VBUS is cut — the chip stayed in download mode across esptool's
   post-flash hard reset and across manual RTS toggling, so the freshly

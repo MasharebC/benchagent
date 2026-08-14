@@ -1,5 +1,57 @@
 # NOTES — did / broken / exact next step (never stop at a clean boundary)
 
+## 2026-08-13 (session 6 — BME280 wired; sensor brown-out diagnosed, driver exonerated)
+**did:** wired the BME280 (SDA→GPIO8, SCL→GPIO9) and got first contact:
+bus scan finds exactly one device at 0x76, chip ID reads 0x60, calibration
+blob reads back plausible (dig_T1=28376 dig_T2=26615 dig_T3=50
+dig_P1=37961 dig_H1=75 dig_H2=358). bme280_init() returns 0. `sensor: T=`
+lines finally appear — so bme280.c's I2C path, calibration parsing and
+compensation math all execute against real silicon for the first time.
+BUT the readings are wrong and frozen: T=22.30C P=671.23hPa H=0.0%,
+byte-identical every second for 20+ s (671 hPa ≈ 3500 m altitude; 0.0%
+RH is impossible indoors).
+Root-caused it with a temporary in-firmware diagnostic (bus scan, register
+dump, write→read-back, and a 10×500ms persistence loop):
+  - at t+3.1s ctrl_hum/ctrl_meas/config all read 0x00 and data regs read
+    80 00 00 80 00 00 80 00 — the power-on reset defaults. Sensor is in
+    SLEEP and has never measured.
+  - writing ctrl_meas=0x27 succeeds and reads straight back as 0x27, so
+    writes are NOT broken.
+  - but it decays: t+500/t+1000ms reads return I2C errors, and by
+    t+1500ms ctrl_meas is 0x00 again and data regs are back to 0x80000,
+    and stay there. Registers only clear like that on power loss/reset.
+  ⇒ the sensor is browning out and resetting roughly once a second.
+    Driver logic is exonerated: hand-computing compensate_T(0x80000) with
+    the real calibration constants yields exactly 2230 → the observed
+    22.30C. The frozen "plausible" numbers are arithmetic on blank
+    registers, not measurements.
+**broken:** BME280 not usable until the wiring/power issue is fixed — most
+likely a loose VDD/GND jumper, or a breakout whose regulator needs ~5V and
+browns out on 3V3. Unverified (user was to check physically): re-seat all
+4 jumpers, confirm VDD is on the devkit 3V3 pin (not 5V, not a GPIO), and
+check whether the module's power pin is VIN vs 3V3.
+ALSO BROKEN, and more important than the sensor: **bme280_init() returned
+rc=0 for a sensor that was actively failing**, and the bench then reported
+clean-looking steady telemetry for a dead sensor. The classifier would
+score this as clean-boot. That is a confident-but-wrong case of exactly
+the kind FaultBench is supposed to expose, and it is currently
+undetectable from the serial log alone — every line looks healthy.
+**exact next step:** (1) fix the wiring, re-run the persistence loop, and
+confirm ctrl_meas holds 0x27 and the raw ADC bytes actually change
+between reads. (2) Then harden the driver so this can never pass silently:
+verify ctrl_meas reads back after configuring it, and have bme280_read()
+reject the reset-default sentinel (adc==0x80000 / 0x8000) instead of
+compensating it into a plausible number. (3) Consider a new planted bug +
+failure class for "sensor stuck / silently static telemetry" — the log is
+otherwise indistinguishable from a healthy run, which makes it a good
+FaultBench case. (4) Still pending from session 5: build the planted-bug
+variants and run the M1 acceptance test.
+The temporary diagnostic firmware (bus scan / register dump / persistence
+loop, ~82 lines across bme280.c/.h and main.c) is NOT committed — it is
+saved as a git stash, message "wip: BME280 bring-up diagnostics
+(temporary, not for commit)". Restore with `git stash apply` (keep it in
+the stash rather than popping, so it stays recoverable).
+
 ## 2026-08-13 (session 5 — first real flash+boot on hardware; 4 build bugs fixed)
 **did:** BME280 sensor arrived, so all hardware is now in hand. User confirmed
 this Mac is the bring-up host for now (industry-standard dedicated bench
