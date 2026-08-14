@@ -33,7 +33,7 @@ typedef struct {
 } bme280_calib_t;
 
 static i2c_master_bus_handle_t s_bus;
-static i2c_device_handle_t     s_dev;
+static i2c_master_dev_handle_t s_dev;
 static bme280_calib_t          s_cal;
 static int32_t                 s_t_fine;   /* shared T→P→H; set by compensate_T */
 

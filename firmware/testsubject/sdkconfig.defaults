@@ -1,0 +1,6 @@
+# The DevKitC-1 exposes only the native USB-Serial-JTAG port (no separate
+# UART-to-USB bridge chip) — flashing and log capture share that one cable.
+# ESP-IDF's stock default routes console to physical UART0 pins instead,
+# which are unwired on this board, so app logs would go nowhere. Route the
+# primary console to USB-Serial-JTAG so `bench/serial_monitor.py` can see it.
+CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y

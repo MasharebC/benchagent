@@ -27,6 +27,7 @@
 #include "esp_log.h"
 #include "esp_task_wdt.h"
 #include "esp_heap_caps.h"
+#include "esp_timer.h"
 #include "bme280.h"
 
 static const char *TAG = "testsubject";
