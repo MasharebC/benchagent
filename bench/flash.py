@@ -8,6 +8,7 @@ manifest so every verdict is traceable to a binary.
 from __future__ import annotations
 import hashlib
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -46,7 +47,7 @@ class EsptoolFlasher:
         image_sha256 = sha256_of(image)
 
         cmd = [
-            "python", "-m", "esptool",
+            sys.executable, "-m", "esptool",
             "--chip", self.chip,
             "--port", self.port_by_id,
             "--baud", str(self.baud),
@@ -59,7 +60,7 @@ class EsptoolFlasher:
             if result.returncode == 0:
                 return {"ok": True, "mock": False,
                         "image_sha256": image_sha256, "attempt": attempt}
-            last_err = result.stderr.strip()
+            last_err = (result.stdout + result.stderr).strip()
             if attempt == 1 and power is not None:
                 power.power_cycle(port=1)
                 time.sleep(2.0)  # wait for re-enumeration

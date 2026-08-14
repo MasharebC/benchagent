@@ -1,5 +1,70 @@
 # NOTES — did / broken / exact next step (never stop at a clean boundary)
 
+## 2026-08-13 (session 5 — first real flash+boot on hardware; 4 build bugs fixed)
+**did:** BME280 sensor arrived, so all hardware is now in hand. User confirmed
+this Mac is the bring-up host for now (industry-standard dedicated bench
+machine to come later). Wired up ESP32-S3-DevKitC-1 through the UUGear
+MEGA4 into this Mac. Installed uhubctl (brew) and pytest/pyserial/esptool
+(pip, matching CI's `pip install pytest pyserial esptool`) — 25/25 unit
+tests still pass. Validated all three real bench classes end-to-end against
+actual hardware for the first time:
+  - esptool connectivity (the shape EsptoolFlasher wraps): `chip_id`
+    succeeded after one manual BOOT+RESET to force download mode — ESP32-S3
+    (QFN56 rev v0.2), WiFi/BLE, 16MB PSRAM, MAC 38:44:be:cc:d3:34.
+  - RealSerial.capture(): captured real boot-ROM text
+    (`ESP-ROM:esp32s3-20210327`, reset-reason line) at 115200 baud.
+  - UhubctlPower.power_cycle(): full VBUS cut/restore on hub `0-1.2.4`
+    port 1 via the actual class — board fully disappeared and
+    re-enumerated.
+Found a port-churn nuance not previously documented: the device node is
+STABLE across RTS-line resets (stayed /dev/cu.usbmodem124101 through
+repeated esptool resets and manual BOOT-mode entry) but CHANGES on a full
+VBUS power-cycle via the MEGA4 (.usbmodem1234561 before/after a power
+cycle vs .usbmodem124101 during RTS-only resets). Logged in
+docs/failure-modes.md.
+Then installed ESP-IDF v6.0.1 (~5GB, ~/esp/esp-idf + ~/.espressif) and got
+the firmware building and running on real silicon for the first time. Four
+real bugs surfaced that only a real build/flash could expose — CI only ran
+cppcheck, never a full compile, so all four had been invisible:
+  1. main.c called esp_timer_get_time() with no #include "esp_timer.h"
+     (previously pulled in transitively; not true on IDF v6).
+  2. main/CMakeLists.txt listed only the legacy `driver` component; the
+     new i2c_master API needs esp_driver_i2c in PRIV_REQUIRES.
+  3. bme280.c declared s_dev as i2c_device_handle_t — no such type in
+     IDF v6; it is i2c_master_dev_handle_t. (Cascaded into 3 more errors.)
+  4. bench/flash.py hardcoded "python" (resolved to Anaconda here, no
+     esptool) → now sys.executable; and captured only stderr for its
+     error message, but esptool writes fatal errors to stdout, so real
+     failures raised a blank RuntimeError. Now captures both.
+Also added firmware/testsubject/sdkconfig.defaults (NEW, tracked): sdkconfig
+is gitignored, so console routing was never pinned and fell back to IDF's
+stock UART0 default — unwired on the DevKitC-1, so app logs went nowhere.
+Pinned CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y.
+Validated end-to-end on hardware after that: EsptoolFlasher.flash() wrote
+merged.bin (attempt 1, sha recorded), and a full
+UhubctlPower.power_cycle() → re-resolve port → RealSerial.capture() cycle
+returns live app telemetry:
+  I (2202) testsubject: heartbeat #2 uptime=2.1s free_heap=391788
+free_heap flat across 14 heartbeats — correct for a no-bug build.
+25/25 unit tests and all 5 mock-loop smoke classes still pass.
+**broken:** BME280 not physically wired yet (needs jumper wires to
+GPIO8/GPIO9), so no `sensor: T=` lines — bme280.c's I2C path is compiled
+and linked but still unexercised against the real bus. Boot banner lines
+(including the "BME280 probe failed" message) are LOST on this board: they
+print before USB-Serial-JTAG enumerates, so capture reliably starts around
+heartbeat #2. That matters for the classifier — anything keying off boot
+banner text will not see it over native USB. Manual BOOT+RESET also
+latches download mode until VBUS is cut (see docs/failure-modes.md); the
+bench must power-cycle after any manual boot-mode entry or it will read
+zero bytes and look like a silent-hang.
+**exact next step:** wire the BME280 (SDA→GPIO8, SCL→GPIO9, 3V3, GND) and
+confirm `sensor: T=` lines appear, which is the first real exercise of
+bme280.c against hardware. Then build the planted-bug variants
+(idf.py -DBUG=WDT_STARVE reconfigure && idf.py build, likewise
+BUG_HEAP_LEAK / BUG_BUF_OVF) and run the M1 acceptance test: flash → watch
+→ power-cycle → verdict, 3 planted bugs diagnosed unassisted. Note the
+boot-banner loss above when checking classifier behavior on real captures.
+
 ## 2026-08-12 (hardware status: MEGA4 + cables in hand, sensor tomorrow)
 **did:** acquired two USB-A-to-Micro-USB cables (one short, one long).
 UUGear MEGA4 hub arrived. Arrival order flipped from the original
