@@ -1,5 +1,63 @@
 # NOTES — did / broken / exact next step (never stop at a clean boundary)
 
+## 2026-08-18 (session 7 — driver hardening: a dead sensor can no longer read as healthy)
+**did:** closed the confident-but-wrong hole session 6 exposed. The BME280
+wiring is untouched (user hasn't checked it yet), so the same failing part
+is still on the bench — which made it the perfect regression fixture.
+  - `bme280.h`: real return codes (`BME280_ERR_IO` / `_CHIP_ID` / `_CONFIG` /
+    `_NO_DATA`) replacing the bare -1, plus `bme280_strerror()` so the serial
+    log names the fault. Named the reset sentinels
+    (`BME280_ADC_RESET_TP` 0x80000, `BME280_ADC_RESET_H` 0x8000).
+  - `bme280.c`: added `reg_write_verify()` — every config register is read
+    straight back; `read_raw()` + `raw_is_reset_default()` factored out of
+    `bme280_read()`. `bme280_init()` now verifies ctrl_hum/ctrl_meas/config
+    stuck AND waits up to 200 ms for the data registers to leave their reset
+    defaults, so "configured" is no longer mistaken for "measuring".
+    `bme280_read()` re-reads ctrl_meas every sample (one byte) and refuses
+    to compensate the reset sentinel instead of turning it into 22.30C.
+  - `main.c`: sensor_task used to silently drop failed reads — a dead sensor
+    produced no line at all. Now logs every failure with a consecutive
+    counter; app_main reports the init failure reason by name.
+  - Verified on real silicon: built clean under ESP-IDF v6.0.1, flashed,
+    power-cycled via MEGA4 (hub is `1-1.2.3` port 1 THIS session — it was
+    `0-1.2.4` in session 5, so always re-resolve it), captured 61 lines
+    through the real `RealSerial` class. Where session 6 printed a frozen,
+    plausible `T=22.30C P=671.23hPa H=0.0%`, it now prints every second:
+      `E bme280: ctrl_meas is 0x00, configured 0x27 — sensor reset`
+      `E testsubject: sensor: read failed (config-lost) consecutive=24`
+    That is the classifier-visible signal that did not exist before.
+  - Human-in-the-loop tooling (user asked to watch work in real time):
+    `tools/live.sh` tails `runs/live.log` in its own Terminal window;
+    `tools/live-note` appends notes and, with `--run`, streams a command's
+    output there too; `bench/serial_monitor.py` gained `live_write()`, which
+    mirrors each captured serial line into `$BENCHAGENT_LIVE_LOG` as it
+    arrives. Opt-in by env var, so CI and the 25 unit tests are unaffected
+    (still 25/25 green).
+**broken:** the BME280 itself is unchanged — still browning out, still
+resetting ~1×/s, `consecutive=` climbs forever. That is now loud instead of
+silent, but it is not fixed; the wiring check from session 6 is still owed.
+Two new things found:
+  - **Boot log gap is worse than noted.** The S3's USB-serial-JTAG only
+    enumerates once the app runs, so `bme280_init()`'s verdict is never
+    captured — this session's capture opened at t+15s. Tried four ways in
+    (poll-and-attach, wait-for-node-gone, `idf.py monitor`, monitor under a
+    pty); monitor needs a TTY and the pty attempt was not run. Runtime
+    behavior is verified, init's own log line is still unobserved.
+  - **`uhubctl -a off` returns before macOS drops the device node.** The
+    node lingered >10 s with power cut, so a fast re-attach grabs a stale
+    handle and dies with `OSError: [Errno 6] Device not configured`. If
+    `bench/power.py` assumes the node is gone right after `power_cycle()`,
+    it has this race — UNVERIFIED, power.py not yet read for it.
+**exact next step:** (1) check the BME280 wiring — re-seat all 4 jumpers,
+confirm VDD is on the devkit 3V3 pin, check whether the breakout wants VIN/5V
+— then re-flash and watch for `consecutive=` to stop climbing and real
+varying readings to appear. The hardened driver is now the test: if the
+sensor is alive, the errors stop by themselves. (2) Audit `bench/power.py`
+for the stale-node race above. (3) Still open from session 6: new planted
+bug + failure class for silently-static telemetry. (4) Still open from
+session 5: build the planted-bug variants and run the M1 acceptance test.
+Session 6's diagnostic firmware remains in `git stash@{0}`, untouched.
+
 ## 2026-08-13 (session 6 — BME280 wired; sensor brown-out diagnosed, driver exonerated)
 **did:** wired the BME280 (SDA→GPIO8, SCL→GPIO9) and got first contact:
 bus scan finds exactly one device at 0x76, chip ID reads 0x60, calibration
