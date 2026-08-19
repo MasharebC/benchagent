@@ -56,6 +56,8 @@ static void sensor_task(void *arg)
     (void)arg;
     ESP_ERROR_CHECK(esp_task_wdt_add(NULL)); /* subscribe deliberately */
 
+    uint32_t fail_streak = 0;
+
     for (;;) {
 #ifdef BUG_WDT_STARVE
         /* BUG: poll "until data ready" with a busy-wait. Never blocks, never
@@ -66,9 +68,16 @@ static void sensor_task(void *arg)
         while (1) { spin++; }
 #endif
         sample_t s = {0};
-        if (bme280_read(&s.temp_c, &s.press_hpa, &s.hum_pct) == 0) {
+        int rc = bme280_read(&s.temp_c, &s.press_hpa, &s.hum_pct);
+        if (rc == BME280_OK) {
+            fail_streak = 0;
             s.ts_us = esp_timer_get_time();
             (void)xQueueSend(s_sample_q, &s, 0);
+        } else {
+            /* Say so on every failed sample. A dropped read used to be
+             * invisible, which let a dead sensor read as a healthy boot. */
+            ESP_LOGE(TAG, "sensor: read failed (%s) consecutive=%lu",
+                     bme280_strerror(rc), (unsigned long)++fail_streak);
         }
         ESP_ERROR_CHECK(esp_task_wdt_reset());
         vTaskDelay(pdMS_TO_TICKS(1000));
@@ -130,8 +139,10 @@ void app_main(void)
 {
     ESP_LOGI(TAG, "build: BUG_FLAGS=%s", BUG_FLAGS_STR);
 
-    if (bme280_init() != 0) {
-        ESP_LOGE(TAG, "i2c: BME280 probe failed — check wiring at 0x76");
+    int init_rc = bme280_init();
+    if (init_rc != BME280_OK) {
+        ESP_LOGE(TAG, "i2c: BME280 init failed (%s) — check wiring at 0x76",
+                 bme280_strerror(init_rc));
         /* Keep running: the bench must be able to classify sensor-absent
          * boots as their own story, not a crash. */
     }

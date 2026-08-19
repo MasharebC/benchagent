@@ -25,10 +25,34 @@
 
 #define BME280_CHIP_ID       0x60
 
+/* Power-on reset defaults of the data registers (datasheet Table 18). A part
+ * that has reset and not yet measured reads back exactly these. They are NOT
+ * a measurement, but the compensation formulas will happily turn them into
+ * plausible-looking engineering units — 22.30 C / 671 hPa / 0.0 %RH with a
+ * typical calibration blob. Reject them at the source. */
+#define BME280_ADC_RESET_TP  0x80000  /* 20-bit temperature and pressure */
+#define BME280_ADC_RESET_H   0x8000   /* 16-bit humidity */
+
+/* Return codes. Distinguishable so the serial log names the actual fault
+ * instead of a generic failure — the bench classifies on these strings. */
+#define BME280_OK             0
+#define BME280_ERR_IO       (-1)  /* I2C transaction failed outright */
+#define BME280_ERR_CHIP_ID  (-2)  /* wrong or absent chip id at 0x76 */
+#define BME280_ERR_CONFIG   (-3)  /* ctrl_meas did not hold what we wrote —
+                                   * the part reset under us (brown-out) */
+#define BME280_ERR_NO_DATA  (-4)  /* registers still at reset defaults: the
+                                   * sensor has never completed a measurement */
+
+/* Human-readable name for a BME280_ERR_* code, for logging. */
+const char *bme280_strerror(int rc);
+
 /* init: probe chip id, soft-reset, read calibration blob, configure
- * oversampling + normal mode. Returns 0 on success. */
+ * oversampling + normal mode, then verify the configuration actually stuck
+ * and that a first measurement completes. Returns BME280_OK on success. */
 int bme280_init(void);
 
-/* read: burst-read 0xF7..0xFE, apply the datasheet compensation
- * (int32 t_fine dance) and return engineering units. Returns 0 on success. */
+/* read: confirm the part is still configured, burst-read 0xF7..0xFE, reject
+ * the reset defaults, then apply the datasheet compensation (int32 t_fine
+ * dance) and return engineering units. Returns BME280_OK on success; on
+ * failure the out-params are left untouched. */
 int bme280_read(float *temp_c, float *press_hpa, float *hum_pct);
