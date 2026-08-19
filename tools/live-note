@@ -1,0 +1,25 @@
+#!/bin/sh
+# Append a timestamped line to the live log that tools/live.sh is tailing.
+#
+#   tools/live-note "flashing firmware to /dev/cu.usbmodem1123101"
+#
+# Also used with --run to echo a command into the log and stream its output
+# there as well as to the caller:
+#
+#   tools/live-note --run idf.py build
+
+REPO=$(cd "$(dirname "$0")/.." && pwd)
+LOG="$REPO/runs/live.log"
+mkdir -p "$REPO/runs"
+
+stamp() { date '+%H:%M:%S'; }
+
+if [ "$1" = "--run" ]; then
+    shift
+    printf '\n[%s] $ %s\n' "$(stamp)" "$*" >>"$LOG"
+    set -o pipefail 2>/dev/null
+    "$@" 2>&1 | tee -a "$LOG"
+    exit $?
+fi
+
+printf '[%s] %s\n' "$(stamp)" "$*" >>"$LOG"

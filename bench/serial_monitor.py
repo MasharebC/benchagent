@@ -14,9 +14,26 @@ Design rules (from the roadmap):
 
 from __future__ import annotations
 
+import os
 import time
 from dataclasses import dataclass
 from pathlib import Path
+
+
+def live_write(text: str) -> None:
+    """Mirror a line to $BENCHAGENT_LIVE_LOG so a human can tail it.
+
+    Opt-in and best-effort: with the variable unset -- CI, unit tests -- this
+    is a no-op, and a failed write never disturbs the capture itself.
+    """
+    path = os.environ.get("BENCHAGENT_LIVE_LOG")
+    if not path:
+        return
+    try:
+        with open(path, "a", buffering=1) as fh:
+            fh.write(text + "\n")
+    except OSError:
+        pass
 
 
 @dataclass
@@ -80,6 +97,7 @@ class RealSerial:
         truncated = False
         last_line_mono = t0
 
+        live_write(f"--- serial capture open: {self.by_id_path} @ {self.baud} ---")
         with serial.Serial(self.by_id_path, self.baud, timeout=1.0) as ser:
             while True:
                 now = time.monotonic()
@@ -98,16 +116,20 @@ class RealSerial:
                 line = raw.decode(errors="replace").rstrip("\r\n")
                 lines.append(line)
                 last_line_mono = time.monotonic()
+                live_write(f"  serial| {line}")
 
                 if len(lines) >= max_lines:
                     truncated = True
                     break
 
         text = "\n".join(lines)
+        ended = time.monotonic()
+        live_write(f"--- serial capture closed: {len(lines)} lines in "
+                   f"{ended - t0:.1f}s{' (truncated)' if truncated else ''} ---")
         return Capture(
             text=text,
             lines=lines,
             started_mono=t0,
-            ended_mono=time.monotonic(),
+            ended_mono=ended,
             truncated=truncated,
         )
